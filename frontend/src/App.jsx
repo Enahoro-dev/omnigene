@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import EmptyState from './components/EmptyState';
 import Navbar from './components/Navbar';
 import TabContainer from './components/TabContainer';
@@ -34,6 +35,7 @@ export default function App() {
       {loaded && genes.length === 0
         ? <EmptyState onUploaded={onUploaded} maxMb={maxMb} />
         : <TabContainer key={version} active={active} genes={genes} info={info} section={section} image={image} />}
+      <Analytics />
     </>
   );
 }
