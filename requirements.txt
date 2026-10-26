@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+anndata
+numpy
+pandas
+scipy
+pyarrow
+pillow
