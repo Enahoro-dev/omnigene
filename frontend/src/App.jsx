@@ -1,16 +1,22 @@
 import { useState } from 'react';
 import EmptyState from './components/EmptyState';
+import MobileNotice from './components/MobileNotice';
 import Navbar from './components/Navbar';
 import TabContainer from './components/TabContainer';
 import { useDatasetInfo } from './hooks/useDatasetInfo';
 import { useGenes } from './hooks/useGenes';
 import { useHealth } from './hooks/useHealth';
+import { useIsMobile } from './hooks/useIsMobile';
 import { clearSpatialCache } from './hooks/useSpatial';
 import { useTissueImage } from './hooks/useTissueImage';
 import { DEFAULT_MAX_MB } from './lib/upload';
 import { TABS } from './tabs';
 
 export default function App() {
+  return useIsMobile() ? <MobileNotice /> : <Workspace />;
+}
+
+function Workspace() {
   const [active, setActive] = useState(TABS[0].id);
   const [version, setVersion] = useState(0);
   const [sectionChoice, setSectionChoice] = useState(undefined);

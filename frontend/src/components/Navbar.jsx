@@ -1,4 +1,5 @@
 import Icon from './Icons';
+import ReadmeButton from './ReadmeButton';
 import Select from './Select';
 import UploadButton from './UploadButton';
 
@@ -42,6 +43,7 @@ export default function Navbar({ tabs, active, onChange, status, info, maxMb, on
           <span className="chip" title={info.note}>Not spatial · {info.label}</span>
         )}
         <UploadButton onUploaded={onUploaded} maxMb={maxMb} />
+        <ReadmeButton />
         <span className={`status ${status}`} title={STATUS[status]} aria-label={STATUS[status]} />
       </div>
     </header>
