@@ -5,10 +5,12 @@ import Dropdown from '../components/Dropdown';
 import ExportButton from '../components/ExportButton';
 import GeneSearch from '../components/GeneSearch';
 import Notice from '../components/Notice';
+import LayoutSelect from '../components/LayoutSelect';
 import Select from '../components/Select';
 import Slider from '../components/Slider';
 import Toggle from '../components/Toggle';
 import { useAnnotation } from '../hooks/useAnnotation';
+import { useLayout } from '../hooks/useLayout';
 import { useNormalized } from '../hooks/useNormalized';
 import { useSpatial } from '../hooks/useSpatial';
 import { BINS, COLORMAP_OPTIONS, colormapShades, colormapStops } from '../lib/colormaps';
@@ -29,7 +31,8 @@ export default function SingleGeneView({ genes, active, info, section, image }) 
   const [busy, setBusy] = useState(false);
 
   const byGene = colorBy === 'gene';
-  const spatial = useSpatial(byGene && gene ? [gene] : [], active, section, !byGene);
+  const { layout, isUmap, hasUmap, setLayout } = useLayout(info);
+  const spatial = useSpatial(byGene && gene ? [gene] : [], active, section, !byGene, layout);
   const annotation = useAnnotation(colorBy, section, active && !byGene);
   const norm = useNormalized(spatial.data, saturation);
   const shades = useMemo(() => colormapShades(colormap), [colormap]);
@@ -77,11 +80,11 @@ export default function SingleGeneView({ genes, active, info, section, image }) 
     setBusy(true);
     try {
       await exportPanels({
-        filename: `omnigene-${byGene ? gene : colorBy}.png`,
+        filename: `omnigene-${byGene ? gene : colorBy}${isUmap ? '-umap' : ''}.png`,
         panels: [{
           label: byGene ? gene : colorBy,
           legend,
-          scene: { x: data.x, y: data.y, layers, threshold: effThreshold, pointSize, image: showImage ? image : null },
+          scene: { x: data.x, y: data.y, layers, threshold: effThreshold, pointSize, image: showImage && !isUmap ? image : null },
         }],
       });
     } catch (e) {
@@ -94,6 +97,7 @@ export default function SingleGeneView({ genes, active, info, section, image }) 
   return (
     <>
       <ControlPanel>
+        {hasUmap && <LayoutSelect layout={layout} onChange={setLayout} />}
         {annotations.length > 0 && (
           <Select label="Color by" value={colorBy} options={colorOptions}
             onChange={(v) => { setColorBy(v); setHidden(new Set()); }} />
@@ -107,11 +111,11 @@ export default function SingleGeneView({ genes, active, info, section, image }) 
           </>
         )}
         <Slider label="Point size" format={fmtPx} value={pointSize} min={1} max={10} step={0.5} onChange={setPointSize} />
-        {image && <Toggle label="Tissue image" checked={showImage} onChange={setShowImage} />}
+        {image && !isUmap && <Toggle label="Tissue image" checked={showImage} onChange={setShowImage} />}
         <ExportButton onClick={onExport} busy={busy} />
       </ControlPanel>
-      <CanvasViewer x={data?.x} y={data?.y} layers={layers} threshold={effThreshold} pointSize={pointSize}
-        image={showImage ? image : null} legend={legend}
+      <CanvasViewer key={layout} x={data?.x} y={data?.y} layers={layers} threshold={effThreshold} pointSize={pointSize}
+        image={showImage && !isUmap ? image : null} legend={legend}
         hint={byGene && !gene ? 'Search for a gene to begin' : undefined}
         loading={spatial.loading || annotation.loading} error={spatial.error || annotation.error} />
       <Notice message={notice} onClose={() => setNotice(null)} />

@@ -5,9 +5,11 @@ import Dropdown from '../components/Dropdown';
 import ExportButton from '../components/ExportButton';
 import GeneSearch from '../components/GeneSearch';
 import Icon from '../components/Icons';
+import LayoutSelect from '../components/LayoutSelect';
 import Notice from '../components/Notice';
 import Slider from '../components/Slider';
 import Toggle from '../components/Toggle';
+import { useLayout } from '../hooks/useLayout';
 import { useNormalized } from '../hooks/useNormalized';
 import { useSpatial } from '../hooks/useSpatial';
 import { COLORMAP_OPTIONS, colormapShades, colormapStops } from '../lib/colormaps';
@@ -17,7 +19,7 @@ import { fmtPct, fmtPercent, fmtPx } from '../lib/format';
 const MIN_SLOTS = 2;
 const MAX_SLOTS = 10;
 
-export default function MultiGeneGridView({ genes, active, section, image }) {
+export default function MultiGeneGridView({ genes, active, info, section, image }) {
   const nextId = useRef(MIN_SLOTS);
   const [slots, setSlots] = useState([{ id: 0, gene: null }, { id: 1, gene: null }]);
   const [colormap, setColormap] = useState('omni');
@@ -29,7 +31,8 @@ export default function MultiGeneGridView({ genes, active, section, image }) {
   const [busy, setBusy] = useState(false);
 
   const picked = slots.map((s) => s.gene).filter(Boolean);
-  const { data, loading, error } = useSpatial(picked, active, section);
+  const { layout, isUmap, hasUmap, setLayout } = useLayout(info);
+  const { data, loading, error } = useSpatial(picked, active, section, false, layout);
   const norm = useNormalized(data, saturation);
   const shades = useMemo(() => colormapShades(colormap), [colormap]);
   const stops = colormapStops(colormap);
@@ -47,14 +50,14 @@ export default function MultiGeneGridView({ genes, active, section, image }) {
     setBusy(true);
     try {
       await exportPanels({
-        filename: 'omnigene-comparison.png',
+        filename: `omnigene-comparison${isUmap ? '-umap' : ''}.png`,
         columns: 2,
         panels: chosen.map((s) => ({
           label: s.gene,
           legend: legendFor(s.gene),
           scene: {
             x: data.x, y: data.y, layers: [{ values: norm[s.gene].values, shades }],
-            threshold, pointSize, image: showImage ? image : null,
+            threshold, pointSize, image: showImage && !isUmap ? image : null,
           },
         })),
       });
@@ -72,7 +75,8 @@ export default function MultiGeneGridView({ genes, active, section, image }) {
         <Slider label="Saturation" format={fmtPercent} value={saturation} min={90} max={100} step={1} onChange={setSaturation} />
         <Slider label="Threshold" format={fmtPct} value={threshold} max={0.95} onChange={setThreshold} />
         <Slider label="Point size" format={fmtPx} value={pointSize} min={1} max={8} step={0.5} onChange={setPointSize} />
-        {image && <Toggle label="Tissue image" checked={showImage} onChange={setShowImage} />}
+        {hasUmap && <LayoutSelect layout={layout} onChange={setLayout} />}
+        {image && !isUmap && <Toggle label="Tissue image" checked={showImage} onChange={setShowImage} />}
         <ExportButton onClick={onExport} busy={busy} />
       </ControlPanel>
 
@@ -90,9 +94,9 @@ export default function MultiGeneGridView({ genes, active, section, image }) {
                   </button>
                 )}
               </div>
-              <CanvasViewer x={slot.gene ? data?.x : undefined} y={slot.gene ? data?.y : undefined}
+              <CanvasViewer key={layout} x={slot.gene ? data?.x : undefined} y={slot.gene ? data?.y : undefined}
                 layers={n ? [{ values: n.values, shades }] : []} ctrlZoom threshold={threshold} pointSize={pointSize}
-                image={showImage ? image : null} legend={n ? legendFor(slot.gene) : undefined}
+                image={showImage && !isUmap ? image : null} legend={n ? legendFor(slot.gene) : undefined}
                 hint={slot.gene ? undefined : 'Search for a gene'} loading={loading} error={error} />
             </div>
           );

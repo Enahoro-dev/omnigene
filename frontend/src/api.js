@@ -27,9 +27,10 @@ export const fetchHealth = () => json('/');
 export const fetchGenes = () => json('/api/genes').then((d) => d.genes);
 export const fetchDatasetInfo = () => json('/api/dataset-info');
 
-export async function fetchSpatial(genes, section, signal) {
+export async function fetchSpatial(genes, section, signal, layout = 'spatial') {
   const q = new URLSearchParams({ genes: genes.join(',') });
   if (section) q.set('section', section);
+  if (layout === 'umap') q.set('layout', 'umap');
   const buf = await request(`/api/spatial/batch?${q}`, { signal }).then((r) => r.arrayBuffer());
   return decodeSpatial(buf);
 }

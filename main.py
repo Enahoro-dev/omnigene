@@ -143,6 +143,15 @@ def find_coordinates(a):
     )
 
 
+def find_umap(a):
+    for key in a.obsm.keys():
+        if key.lower() in ("x_umap", "umap"):
+            xy = _xy(a.obsm[key])
+            if xy is not None:
+                return xy
+    return None
+
+
 def use_gene_symbols(a):
     names = a.var_names.astype(str)
     if len(names) and (names.str.startswith("ENS").mean() > 0.5):
@@ -210,6 +219,8 @@ class Dataset:
     def __init__(self, a, xy, info):
         self.info = info
         self.xy = xy
+        # keep the UMAP only when the main layout is real tissue coordinates
+        self.umap = find_umap(a) if info.get("is_spatial") else None
         self.valid = np.isfinite(xy).all(axis=1)
         self.image = extract_image(a)
         self.sections = find_sections(a)
@@ -223,6 +234,7 @@ class Dataset:
             "loaded": True,
             "cells": int(self.valid.sum()),
             "genes": int(self.X.shape[1]),
+            "has_umap": self.umap is not None,
             **self.info,
             "annotations": self.annotations,
             "sections": {"column": self.sections["column"], "values": self.sections["values"]} if self.sections else None,
@@ -457,8 +469,11 @@ def encode_batch(meta, x, y, arrays):
 
 
 @app.get("/api/spatial/batch")
-def get_batch(genes: str = Query(""), section: Optional[str] = None, sid: str = Depends(session_id)):
+def get_batch(genes: str = Query(""), section: Optional[str] = None, layout: str = "spatial", sid: str = Depends(session_id)):
     ds = require_ds(sid)
+    if layout == "umap" and ds.umap is None:
+        raise HTTPException(status_code=400, detail="This dataset has no UMAP.")
+    xy = ds.umap if layout == "umap" else ds.xy
     names = [g.strip() for g in genes.split(",") if g.strip()]
     if len(names) > MAX_GENES:
         raise HTTPException(status_code=400, detail=f"Maximum of {MAX_GENES} genes per request")
@@ -474,8 +489,8 @@ def get_batch(genes: str = Query(""), section: Optional[str] = None, sid: str = 
         arrays.append(arr)
         gene_meta.append({"name": symbol, "min": float(arr.min()), "max": float(arr.max())})
 
-    meta = {"n": n, "genes": gene_meta, "coords_source": ds.info.get("source")}
-    body = encode_batch(meta, ds.xy[mask, 0], ds.xy[mask, 1], arrays)
+    meta = {"n": n, "genes": gene_meta, "coords_source": "umap" if layout == "umap" else ds.info.get("source")}
+    body = encode_batch(meta, xy[mask, 0], xy[mask, 1], arrays)
     return Response(body, media_type="application/octet-stream")
 
 

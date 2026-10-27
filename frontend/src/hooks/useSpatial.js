@@ -5,9 +5,9 @@ const cache = new Map();
 const CACHE_LIMIT = 8;
 
 // allowEmpty: fetch coordinates only when no genes are requested
-export function useSpatial(genes, enabled = true, section = null, allowEmpty = false) {
+export function useSpatial(genes, enabled = true, section = null, allowEmpty = false, layout = 'spatial') {
   const key = [...new Set(genes.filter(Boolean))].join(',');
-  const cacheKey = `${section || ''}|${key}`;
+  const cacheKey = `${layout}|${section || ''}|${key}`;
   const [state, setState] = useState({ data: null, loading: false, error: null });
 
   useEffect(() => {
@@ -18,7 +18,7 @@ export function useSpatial(genes, enabled = true, section = null, allowEmpty = f
     }
     const ctrl = new AbortController();
     setState((s) => ({ ...s, loading: true, error: null }));
-    fetchSpatial(key ? key.split(',') : [], section, ctrl.signal)
+    fetchSpatial(key ? key.split(',') : [], section, ctrl.signal, layout)
       .then((data) => {
         cache.set(cacheKey, data);
         if (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value);

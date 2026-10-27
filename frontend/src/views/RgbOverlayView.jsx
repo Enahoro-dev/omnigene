@@ -4,9 +4,11 @@ import Coexpression from '../components/Coexpression';
 import ControlPanel from '../components/ControlPanel';
 import ExportButton from '../components/ExportButton';
 import GeneSearch from '../components/GeneSearch';
+import LayoutSelect from '../components/LayoutSelect';
 import Notice from '../components/Notice';
 import Slider from '../components/Slider';
 import Toggle from '../components/Toggle';
+import { useLayout } from '../hooks/useLayout';
 import { useNormalized } from '../hooks/useNormalized';
 import { useSpatial } from '../hooks/useSpatial';
 import { channelShades } from '../lib/colormaps';
@@ -23,7 +25,7 @@ const CHANNELS = [
 const css = ([r, g, b]) => `rgb(${r},${g},${b})`;
 const SHADES = CHANNELS.map((c) => channelShades(c.color));
 
-export default function RgbOverlayView({ genes, active, section, image }) {
+export default function RgbOverlayView({ genes, active, info, section, image }) {
   const [picks, setPicks] = useState([null, null, null, null]);
   const [saturation, setSaturation] = useState(99);
   const [threshold, setThreshold] = useState(0);
@@ -33,7 +35,8 @@ export default function RgbOverlayView({ genes, active, section, image }) {
   const [busy, setBusy] = useState(false);
 
   const hasGene = picks.some(Boolean);
-  const { data, loading, error } = useSpatial(picks, active, section);
+  const { layout, isUmap, hasUmap, setLayout } = useLayout(info);
+  const { data, loading, error } = useSpatial(picks, active, section, false, layout);
   const norm = useNormalized(data, saturation);
 
   const layers = useMemo(
@@ -71,10 +74,10 @@ export default function RgbOverlayView({ genes, active, section, image }) {
     setBusy(true);
     try {
       await exportPanels({
-        filename: 'omnigene-overlay.png',
+        filename: `omnigene-overlay${isUmap ? '-umap' : ''}.png`,
         panels: [{
           legend,
-          scene: { x: data.x, y: data.y, layers, blend: 'add', threshold, pointSize, image: showImage ? image : null },
+          scene: { x: data.x, y: data.y, layers, blend: 'add', threshold, pointSize, image: showImage && !isUmap ? image : null },
         }],
       });
     } catch (e) {
@@ -95,11 +98,12 @@ export default function RgbOverlayView({ genes, active, section, image }) {
         <Slider label="Saturation" format={fmtPercent} value={saturation} min={90} max={100} step={1} onChange={setSaturation} />
         <Slider label="Threshold" format={fmtPct} value={threshold} max={0.95} onChange={setThreshold} />
         <Slider label="Point size" format={fmtPx} value={pointSize} min={1} max={10} step={0.5} onChange={setPointSize} />
-        {image && <Toggle label="Tissue image" checked={showImage} onChange={setShowImage} />}
+        {hasUmap && <LayoutSelect layout={layout} onChange={setLayout} />}
+        {image && !isUmap && <Toggle label="Tissue image" checked={showImage} onChange={setShowImage} />}
         <ExportButton onClick={onExport} busy={busy} />
       </ControlPanel>
-      <CanvasViewer x={hasGene ? data?.x : undefined} y={hasGene ? data?.y : undefined} layers={layers}
-        blend="add" threshold={threshold} pointSize={pointSize} image={showImage ? image : null} legend={legend}
+      <CanvasViewer key={layout} x={hasGene ? data?.x : undefined} y={hasGene ? data?.y : undefined} layers={layers}
+        blend="add" threshold={threshold} pointSize={pointSize} image={showImage && !isUmap ? image : null} legend={legend}
         hint={hasGene ? undefined : 'Pick a gene for any channel'} loading={loading} error={error} />
       <Coexpression items={stats} />
       <Notice message={notice} onClose={() => setNotice(null)} />
