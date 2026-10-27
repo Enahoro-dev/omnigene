@@ -1,6 +1,6 @@
 # OmniGene
 
-**OmniGene** is a high-performance interactive spatial transcriptomics browser designed to visualise single-cell spatial coordinates, gene expression heatmaps, and multi-gene overlays directly in your browser.
+**OmniGene** is a lightweight, interactive spatial transcriptomics browser for the first look at your data. Visualise spatial coordinates, view gene expression, compare genes side by side, and overlay up to four colour-coded genes on the same tissue section, directly in your browser. No code and no installation needed.
 
 🔗 **Live Demo:** [https://omnigene-psi.vercel.app](https://omnigene-psi.vercel.app)
 
@@ -8,10 +8,32 @@
 
 ## Features
 
-* **Interactive Canvas:** High-speed WebGL rendering for thousands of single cells with adjustable point size and opacity thresholds.
+* **Interactive Canvas:** Fast canvas rendering for thousands of cells or spots, with zoom, pan, and adjustable point size and expression thresholds.
+* **Multi-Gene Overlay:** Assign up to four genes to four colour channels (red, green, blue, yellow) and see them together on one tissue section, with saturation and threshold controls.
+* **Tissue / UMAP Toggle:** Switch any view between the tissue layout and a UMAP of the same cells or spots, in Explore, Compare and Overlay, with the same gene and cell-type colouring. The toggle appears when your file already contains a UMAP.
+* **Gene Comparison:** View several genes side by side.
+* **PNG Export:** Export the current view as a figure-ready PNG for presentations, theses, and papers.
 * **Multi-Format Support:** Load `.h5ad` (AnnData), `.loom`, `.parquet`, or tabular CSV/TSV spatial datasets.
-* **Gene Expression & Annotations:** Search genes dynamically, switch colour palettes, and explore cellular annotations.
+* **Gene Expression & Annotations:** Search genes dynamically, switch colour palettes, and colour the tissue by cell type or other annotations.
 * **Chunked Upload Pipeline:** Out-of-order chunked file uploading with random-access offset writing (`f.seek()`) for large spatial datasets.
+
+---
+
+## What OmniGene Is For (and What It Isn't)
+
+OmniGene is built for **initial, visual exploration**: seeing where genes of interest sit in the tissue before you run advanced analysis, or checking that the marker genes for a cluster appear where you expect. It complements tools like Seurat, Scanpy and Squidpy; it does not replace them.
+
+Things to keep in mind:
+
+* **Visual, not statistical.** There are no significance tests, and overlays depend on normalisation and on where you set the threshold. Genes appearing in the same place is a clue, not a conclusion.
+* **Spots are not always single cells.** In Visium-style data, each spot contains several cells, so two genes overlapping in a spot does not show they are in the same cell.
+* **UMAP is display-only.** OmniGene shows a UMAP only if your file already contains one (stored as `X_umap`). It doesn't compute one, and selecting points on the UMAP doesn't yet highlight them on the tissue.
+
+---
+
+## Try It with Example Data
+
+A public Visium dataset is available on Zenodo: [Processed data on Zenodo](https://doi.org/10.5281/zenodo.6578047). Download `Visium_control_P1.h5ad` and upload it to the [live demo](https://omnigene-psi.vercel.app), then try the **Overlay** tab.
 
 ---
 
