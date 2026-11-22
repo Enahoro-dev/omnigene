@@ -19,7 +19,7 @@
 
 ---
 
-## What OmniGene Is For (and What It Isn't)
+## What OmniGene Is For
 
 OmniGene is built for **initial, visual exploration**: seeing where genes of interest sit in the tissue before you run advanced analysis, or checking that the marker genes for a cluster appear where you expect. It complements tools like Seurat, Scanpy and Squidpy; it does not replace them.
 
